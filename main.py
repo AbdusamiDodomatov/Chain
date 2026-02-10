@@ -9,12 +9,11 @@ import avto
 import forma1
 import forma2
 import xmed
-import xmed
 
-# Load environment
+# Load environment 
 load_dotenv()
 
-app = FastAPI(title="Unified Multi-Agent API")
+app = FastAPI(title="Multi-Agent API")
 
 # Register routes from each module
 app.include_router(document.router)

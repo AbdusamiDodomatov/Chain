@@ -45,6 +45,9 @@ async def search_doctor(page: str = "1", pageSize: str = "3", name: str = "", sp
         "Content-Type": "application/json"
     }
     
+    import time
+    t_start = time.time()
+    
     payload = {
         "page": page,
         "pageSize": pageSize,
@@ -52,49 +55,48 @@ async def search_doctor(page: str = "1", pageSize: str = "3", name: str = "", sp
         "speciality": speciality or []
     }
     
+    print(f"DEBUG [xmed]: Calling search_doctor with speciality={speciality}, name='{name}'")
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, headers=headers, timeout=30.0)
             response.raise_for_status()
             data = response.json()
+            t_end = time.time()
+            print(f"DEBUG [xmed]: search_doctor took {t_end - t_start:.2f}s and returned {len(data.get('results', []))} results")
             return data
     except Exception as e:
+        print(f"DEBUG [xmed]: search_doctor FAILED after {time.time() - t_start:.2f}s: {e}")
         return {"error": str(e), "results": []}
 
 # --- Agent System Prompt ---
-SYSTEM_PROMPT = """Sen malakali doctor yordamchisisan! 
-Sening vazifang user yozgan shikoyatlari bo'yicha qaysi doktor unga mos kelishini aniqlash va uni to'g'ri doktorga yo'naltirish.
+SYSTEM_PROMPT = """Siz professional AI tibbiy yordamchisiz.
 
-Eng muhim qoidalar:
-Doktor id hech qachon to'qib chiqarilmasin.
-Id chiqarishda chat tarixidan foydalanmang.
-Id Chiqarish har doim "search_doctor" toolga murojat qilgandan keyin bolishi kerak.
-Maslahat berish jarayonida <doctor malumotlari> har doim bolishi kerak.
-Foydalanuvchi yozgan til va alifboda javob berish kerak.
+Sizning vazifangiz: Foydalanuvchi shikoyatlari asosida "search_doctor" tooli orqali eng mos shifokorni topilgan natijalar asosida tavsiya qilish.
 
-Ish tartibi:
-- Kop tillilik: Foydalanuvchi senga qaysi tilda(masalan o'zbekcha, ruscha) va qanday alifboda (masalan kirill, lotin) yozsa barcha javoblar faqat shunday tilda va shu alifboda bo'lsin.
-- Foydalanuvchi senga kasalligi yoki muammolari haqida yozadi sen bu muammoga mos doctor tavsiya qilishing kerak.
-- Foydalanuvchi og'rig'i haqida aytadi sen unga quydagi doktorlar orasidan keraklisini tanlaysan:
+Qat'iy qoida va muhim qoida:
+• HECH QACHON, HECH BIR SO'Z HAM SO'RALGAN TILDAN BOSHQA TILDA CHIQMASIN! HAR BIR SO'Z VA HAR BIR GAP BELGILANGAN TILGA TARJIMA QILINSIN!
+• FAQAT "search_doctor" tooldan kelgan natija asosida javob bering. ID ni to'qib chiqarmang!
+
+Xulosa shakllantirish tartibi:
+✓ Shikoyatlar tahlili (qisqa)
+✓ Kasallikning ehtimoliy sababi (londa)
+✓ Shifokor tavsiyasi (Ism-sharifi, reytingi, ish tajribasi)
+Yuqoridagi natijalar hammasi qisqa londa bo'lsin. Hammasi bitta paragraphda yozilsin.
+
+Quyidagi mutaxassisliklar (speciality) ro'yxatidan foydalaning:
 akusher-ginekolog, allergist, angiologist, andrologist, anesteziolog-reanimatolog, aritmolog, aphasiologist, bariatricheskiy-xirurg, valeolog, vertebrologist, vet, virologist, obstetrician, vrach-dietolog, laboratory-doctor, vrach-lfk, narodnaya-medicina, general-doctor, vrach-transfuziolog, vrach-ehndoskopist, gastroenterologist, gelmintolog, hematologist, geneticist, hepatologist, gynecologist, ginekolog-ehndokrinolog, girudoterapevt, dermatovenereologist, dermato-onkolog, childrens_gynecologist, childrens-infectious-disease, childrens-neurologist, pediatric-neurosurgeon, childrens-oncologist, childrens-psychologist, childrens-resuscitator, pediatric-urologist, childrens-endocrinologist, defectologist, nutritionist, acupuncturist, immunologist, intervencionnyj-kardiolog, infectionist, cardiologist, cardioresuscitator, cardio_surgeon, kinezioterapevt, kovidolog, coloproctologist, kombustiolog, cosmetologist, massage-therapist, speech-therapist, ent, mammologist, manualnyj-terapevt, masseur, medicinskij-kosmetolog, medicinskij-psiholog, nurse, mikolog, narcologist, neurologist, nevrolog-refleksoterapevt, nejro-onkolog, neurosurgeon, neyroendokrinolog, neonatologist, nephrologist, oligofrenopedagog, onkogematolog, oncogynecologist, onkokoloproktolog, oncologist, oncologist-mammologist, onkolog-himioterapevt, onkourolog, ortodont, ortoped-vertebrolog, childrens-orthopedist, orthopedist-traumatologist, osteopat, otonevrolog, ophthalmologist, oftalmohirurg, parasitologist, pediatrician, plastic_surgeon, podolog, podrostkovyj-psiholog, proctologist, profpatolog, psixiatr, psychologist, psychotherapist, pulmonologist, pulmonolog-astmolog, radiologist, rehabilitologist, resuscitator, rheumatologist, rentgenologist, reproductologist, sexologist, cardiovascular-surgeon, screening, somnolog, dentist-surgeon, dentist, audiologist, therapist, toxicologist, thoracic-oncologist, torakalhiy-xirurg, traumatologist, trichologist, urologist, urolog-androlog, pharmacologist, physiotherapist, phlebologist, foniatr, phthisiatrician, ftiziatr-pulmonolog, functional-diagnostic, surgeon, childrens-surgeon, circumcisiologist, maxillofacial-surgeon, ehmbriolog, ehndovaskulyarnyj-hirurg, endocrinologist, epidemiologist, ehpileptolog.
 
-- Search Doctor toolga jonatiladigan speciality qiymati yuqoridagi ro'yxatdan olinishi shart.
-- "Search Doctor" toolga kirmaguncha javob chiqarma. Barcha javob "search_doctor" tooldan kelgan natija asosida bo'lishi kerak.
-- Kassalik haqida qisqacha nimadan kelib chiqishi mumkin va tashxis juda ham cho'zilib ketmasin umumiy malumotlar ber qanday choralar ko'rish kerakligi haqida qisqacha tushintir va davomidan * Doktor : tanlangan doktorning ism familiyasi, reytingi, va ish tajribasi chiqsin. 
-- Tavsiya qismi 150 ta belgidan oshmasin.
-
-CHIQUVCHI FORMAT FAQAT JSON:
+XULOSA FAQAT JSON FORMATIDA BO'LISHI SHART:
 {
-"answer": "<sening javobing>",
-"doctor_id": <doctorning idsi(agar bor bo'lsa aks holda null)>,
-"answer_2": "<Hisobingizni qanday to'ldirishni bilasizmi? (agar doctor_id bo'lsa)>",
+"answer": "<tahlil va doktor tavsiyasi: ismi, reytingi, tajribasi>",
+"doctor_id": <id_yoki_null>,
+"answer_2": "Hisobingizni qanday to'ldirishni bilasizmi?",
 "answer_3": "#fill",
-"answer_4": "<Hisobingizni to'ldirib ushbu shifokor bilan maslahatlashing. (agar doctor_id bo'lsa)>"
+"answer_4": "Hisobingizni to'ldirib ushbu shifokor bilan maslahatlashing."
 }
 
-Ishlash qoidalari:
-- savol:To'lov qilish va hisobni to'ldirish -> javob: "answer": "#fill", qolganlar null.
-- Chat davomida mavzudan tashqari savullar bo'lsa "Men faqat mavzu doirasida javob bera olaman" deysan.
+To'lov/hisob savollari uchun: {"answer": "#fill", "doctor_id": null, "answer_2": null, "answer_3": null, "answer_4": null}.
+Mavzuda bo'lmagan: "Men faqat mavzu doirasida javob bera olaman".
 """
 
 # --- Agent Initialization ---
@@ -126,6 +128,8 @@ def extract_json(text: str) -> Dict[str, Any]:
 @router.post("/webhook/xmed")
 async def handle_xmed(payload: XMedRequest):
     """XMed Integrated Portal: Medical Assistant Agent."""
+    import time
+    start_time = time.time()
     config = {"configurable": {"thread_id": payload.session_id}}
     
     try:
@@ -135,7 +139,11 @@ async def handle_xmed(payload: XMedRequest):
             HumanMessage(content=payload.message)
         ]}
         
+        print(f"DEBUG [xmed]: Starting ReAct agent for session {payload.session_id}")
+        t0 = time.time()
         result = await agent_executor.ainvoke(input_data, config=config)
+        t1 = time.time()
+        print(f"DEBUG [xmed]: ReAct agent finished in {t1 - t0:.2f}s")
         
         last_message = result["messages"][-1].content
         parsed_output = extract_json(last_message)
@@ -148,7 +156,16 @@ async def handle_xmed(payload: XMedRequest):
             "answer_4": parsed_output.get("answer_4")
         }
         
-        return JSONResponse(content=response_json)
+        # Clean newlines from all answer strings
+        for k in response_json:
+            if isinstance(response_json[k], str):
+                response_json[k] = response_json[k].replace("\n", " ").strip()
+                
+        end_time = time.time()
+        return {
+            "data": response_json,
+            "time": end_time - start_time
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Medical Agent failed: {str(e)}")

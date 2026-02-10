@@ -22,6 +22,8 @@ if not API_KEY:
 async def handle_forma1(file: UploadFile = File(...)):
     """Migrated from forma1.json: Excel/CSV parsing via AI Agent."""
     
+    import time
+    start_time = time.time()
     # 1. Read file content based on type
     content = await file.read()
     filename = file.filename.lower()
@@ -100,6 +102,10 @@ DIQQAT (MUHIM QOIDALAR):
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
         
-        return JSONResponse(content=json.loads(text))
+        end_time = time.time()
+        return {
+            "data": json.loads(text),
+            "time": end_time - start_time
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Parsing failed: {str(e)}")

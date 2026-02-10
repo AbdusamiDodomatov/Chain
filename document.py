@@ -430,14 +430,14 @@ DICT = {
 
 # ---------------- main builder (adapted from code.py) ----------------
 
-def build_html(payload: Any, ai_conclusion: str) -> str:
+def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
     # If payload is a list, try using the first element or treat it as the body
     if isinstance(payload, list):
         body = payload[0] if payload else {}
     else:
         body = payload.get("body") if isinstance(payload.get("body"), dict) else payload
         
-    language = str(body.get("language", "uz")).lower()
+    language = str(language).lower()
 
     L = DICT.get(language) or DICT["uz"]
 
@@ -523,7 +523,7 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
         type_ = L.get("ind") if is_individual else (L.get("leg") if is_legal else "---")
         share = val(f.get("sharePercent"))
 
-        founders_html += f"<tr><td>{esc(name)}</td><td>{esc(type_)}</td><td>{esc(share)}</td><td>---</td></tr>"
+        founders_html += f"<tr><td style='border: 1px solid black; padding: 4px;'>{esc(name)}</td><td style='border: 1px solid black; padding: 4px;'>{esc(type_)}</td><td style='border: 1px solid black; padding: 4px;'>{esc(share)}</td><td style='border: 1px solid black; padding: 4px;'>---</td></tr>"
 
     # collateral
     collateral = safe_arr(get_in(body, ["applicationInfo", "collateralData"]))
@@ -534,18 +534,18 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
             y = (i or {}).get("yurTaxObjectData") or {}
             collateral_real_estate += f"""
 <tr>
-<td>{esc(val(y.get("tin")))}</td>
-<td>{esc(val(y.get("name")))}</td>
-<td>{esc(val(y.get("type")))}</td>
-<td>{esc(val(y.get("obj_code") or (i or {}).get("cadastreOrCarKuzov")))}</td>
-<td>{esc(val(y.get("obj_name")))}</td>
-<td>{esc(val(y.get("address") or (i or {}).get("address")))}</td>
-<td>{esc(val(y.get("percentage")))}</td>
-<td>{esc(num_format(y.get("inv_cost")))}</td>
-<td>{esc(num_format(y.get("total_area")))}</td>
-<td>{esc(num_format(y.get("land_area")))}</td>
-<td>{esc(num_format(y.get("land_extra_area")))}</td>
-<td>{esc(num_format((i or {}).get("estimatedValue")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("tin")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("name")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("type")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("obj_code") or (i or {}).get("cadastreOrCarKuzov")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("obj_name")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("address") or (i or {}).get("address")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(y.get("percentage")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format(y.get("inv_cost")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format(y.get("total_area")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format(y.get("land_area")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format(y.get("land_extra_area")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format((i or {}).get("estimatedValue")))}</td>
 </tr>
 """.strip()
 
@@ -555,18 +555,18 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
             c = (i or {}).get("yurCarData") or {}
             collateral_cars += f"""
 <tr>
-<td>{esc(val(c.get("model")))}</td>
-<td>{esc(val(c.get("color")))}</td>
-<td>{esc(val((i or {}).get("carYear") or c.get("year")))}</td>
-<td>{esc(val((i or {}).get("cadastreOrCarKuzov") or c.get("kuzov")))}</td>
-<td>{esc(val(c.get("motor")))}</td>
-<td>{esc(val(c.get("shassi")))}</td>
-<td>{esc(val((i or {}).get("carLicensePlate") or c.get("gosNumber")))}</td>
-<td>{esc(val(c.get("regDate")))}</td>
-<td>{esc(val(c.get("division")))}</td>
-<td>{esc(val(c.get("owner")))}</td>
-<td>{esc(val(c.get("adres") or (i or {}).get("address")))}</td>
-<td>{esc(num_format((i or {}).get("estimatedValue")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("model")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("color")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((i or {}).get("carYear") or c.get("year")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((i or {}).get("cadastreOrCarKuzov") or c.get("kuzov")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("motor")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("shassi")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((i or {}).get("carLicensePlate") or c.get("gosNumber")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("regDate")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("division")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("owner")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val(c.get("adres") or (i or {}).get("address")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format((i or {}).get("estimatedValue")))}</td>
 </tr>
 """.strip()
 
@@ -575,17 +575,17 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
     for item in safe_arr(tax_objects.get("dataObject")):
         tax_obj_rows += f"""
 <tr>
-<td>{esc(val((item or {}).get("tin")))}</td>
-<td>{esc(val((item or {}).get("name")))}</td>
-<td>{esc(val((item or {}).get("type")))}</td>
-<td>{esc(val((item or {}).get("obj_code")))}</td>
-<td>{esc(val((item or {}).get("obj_name")))}</td>
-<td>{esc(val((item or {}).get("address")))}</td>
-<td>{esc(val((item or {}).get("percentage")))}</td>
-<td>{esc(num_format((item or {}).get("inv_cost")))}</td>
-<td>{esc(num_format((item or {}).get("total_area")))}</td>
-<td>{esc(num_format((item or {}).get("land_area")))}</td>
-<td>{esc(num_format((item or {}).get("land_extra_area")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("tin")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("name")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("type")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("obj_code")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("obj_name")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("address")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((item or {}).get("percentage")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format((item or {}).get("inv_cost")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format((item or {}).get("total_area")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format((item or {}).get("land_area")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(num_format((item or {}).get("land_extra_area")))}</td>
 </tr>
 """.strip()
 
@@ -593,17 +593,17 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
     for car in safe_arr(tax_objects.get("carDataObject")):
         car_obj_rows += f"""
 <tr>
-<td>{esc(val((car or {}).get("model")))}</td>
-<td>{esc(val((car or {}).get("color")))}</td>
-<td>{esc(val((car or {}).get("year")))}</td>
-<td>{esc(val((car or {}).get("kuzov")))}</td>
-<td>{esc(val((car or {}).get("motor")))}</td>
-<td>{esc(val((car or {}).get("shassi")))}</td>
-<td>{esc(val((car or {}).get("gosNumber")))}</td>
-<td>{esc(val((car or {}).get("regDate")))}</td>
-<td>{esc(val((car or {}).get("division")))}</td>
-<td>{esc(val((car or {}).get("owner")))}</td>
-<td>{esc(val((car or {}).get("adres")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("model")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("color")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("year")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("kuzov")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("motor")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("shassi")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("gosNumber")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("regDate")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("division")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("owner")))}</td>
+<td style="border: 1px solid black; padding: 4px;">{esc(val((car or {}).get("adres")))}</td>
 </tr>
 """.strip()
 
@@ -654,29 +654,29 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
 
 <h2>{L.get("hProject")}: {esc(company_name)}</h2>
 <h3>{L.get("hCompany")}</h3>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
-<tr><td>{L.get("orgFull")}</td><td>{esc(company_name)}</td></tr>
-<tr><td>{L.get("inn")}</td><td>{esc(tin)}</td></tr>
-<tr><td>{L.get("oked")}</td><td>{esc(oked)}</td></tr>
-<tr><td>{L.get("cat")}</td><td>{esc(category)}</td></tr>
-<tr><td>{L.get("emp")}</td><td>{esc(employee_count)}</td></tr>
-<tr><td>{L.get("addr")}</td><td>{esc(legal_address)}</td></tr>
-<tr><td>{L.get("fund")}</td><td>{esc(business_fund)}</td></tr>
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("orgFull")}</td><td style="border: 1px solid black; padding: 4px;">{esc(company_name)}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("inn")}</td><td style="border: 1px solid black; padding: 4px;">{esc(tin)}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("oked")}</td><td style="border: 1px solid black; padding: 4px;">{esc(oked)}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("cat")}</td><td style="border: 1px solid black; padding: 4px;">{esc(category)}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("emp")}</td><td style="border: 1px solid black; padding: 4px;">{esc(employee_count)}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("addr")}</td><td style="border: 1px solid black; padding: 4px;">{esc(legal_address)}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("fund")}</td><td style="border: 1px solid black; padding: 4px;">{esc(business_fund)}</td></tr>
 </table>
 
 <h2>{L.get("foundersTitle")}</h2>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
-<tr><th>{L.get("fio")}</th><th>{L.get("who")}</th><th>{L.get("share")}</th><th>{L.get("other")}</th></tr>
-{founders_html or "<tr><td>---</td><td>---</td><td>---</td><td>---</td></tr>"}
-<tr><td><b>{L.get("director")}</b></td><td colspan="3">{esc(director_name)}</td></tr>
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<tr><th style="border: 1px solid black; padding: 4px;">{L.get("fio")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("who")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("share")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("other")}</th></tr>
+{founders_html or "<tr><td style='border: 1px solid black; padding: 4px;'>---</td><td style='border: 1px solid black; padding: 4px;'>---</td><td style='border: 1px solid black; padding: 4px;'>---</td><td style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
+<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("director")}</b></td><td style="border: 1px solid black; padding: 4px;" colspan="3">{esc(director_name)}</td></tr>
 </table>
 
 <p><em><u>{L.get("bankReq")}</u></em></p>
 <p><strong>{L.get("mainAcc")}</strong></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
-<tr><td><b>{L.get("bankName")}</b></td><td>{esc(val(bank_info.get("ns2Name")))}</td></tr>
-<tr><td><b>{L.get("acc")}</b></td><td>{esc(bank_acc_format(bank_info.get("account")))}</td></tr>
-<tr><td><b>{L.get("mfo")}</b></td><td>{esc(val(bank_info.get("ns2Code")))}</td></tr>
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("bankName")}</b></td><td style="border: 1px solid black; padding: 4px;">{esc(val(bank_info.get("ns2Name")))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("acc")}</b></td><td style="border: 1px solid black; padding: 4px;">{esc(bank_acc_format(bank_info.get("account")))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("mfo")}</b></td><td style="border: 1px solid black; padding: 4px;">{esc(val(bank_info.get("ns2Code")))}</td></tr>
 </table>
 
 <p><strong><u>{L.get("appShort")}</u></strong></br>
@@ -699,40 +699,38 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
 {L.get("infra")}</br>
 {L.get("built")} {esc(main_obj_extra)} {ua} {L.get("built2") if language in ("uz","cyrl") else ""}</p>
 
-<h3>{L.get("collateralTitle")}</h3>
-<p><em><u>{L.get("reTitle")}</u></em></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
 <tr>
-<th>{L.get("hTin")}</th><th>{L.get("hName")}</th><th>{L.get("hType")}</th>
-<th>{L.get("hCad")}</th><th>{L.get("hObjName")}</th><th>{L.get("hAddr")}</th><th>{L.get("hShare")}</th><th>{L.get("hInvCost")}</th><th>{L.get("hTotalArea")}</th><th>{L.get("hBuildArea")}</th><th>{L.get("hExtraArea")}</th><th>{L.get("hEstValue")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hEstValue")}</th>
 </tr>
-{collateral_real_estate or f"<tr><td colspan='12'>---</td></tr>"}
+{collateral_real_estate or f"<tr><td colspan='12' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
 </table>
 
 </br>
 <p><em><u>{L.get("carTitle")}</u></em></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
 <tr>
-<th>{L.get("hModel")}</th><th>{L.get("hColor")}</th><th>{L.get("hYear")}</th><th>{L.get("hKuzov")}</th><th>{L.get("hMotor")}</th><th>{L.get("hShassi")}</th><th>{L.get("hGosNumber")}</th><th>{L.get("hRegDate")}</th><th>{L.get("hDivision")}</th><th>{L.get("hOwner")}</th><th>{L.get("hAddr")}</th><th>{L.get("hEstValue")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hModel")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hColor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hYear")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hKuzov")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hMotor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShassi")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hGosNumber")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hRegDate")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hDivision")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hOwner")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hEstValue")}</th>
 </tr>
-{collateral_cars or f"<tr><td colspan='12'>---</td></tr>"}
+{collateral_cars or f"<tr><td colspan='12' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
 </table>
 
 <p><i><u>{L.get("balanceTitle")}</u></i></p>
-<table border="1" cellspacing="0" cellpadding="5">
-<tr><th>{L.get("metric")}</th><th>{L.get("row")}</th><th colspan="2">{esc(company_name)}</th></tr>
-<tr><th></th><th></th><th></th><th></th></tr>
-<tr><td>{S7["a"]}</td><td>010</td><td>{esc(find_row(forma1,"010","sum_begin_period"))}</td><td>{esc(find_row(forma1,"010","sum_end_period"))}</td></tr>
-<tr><td>{S7["b"]}</td><td>140</td><td>{esc(find_row(forma1,"140","sum_begin_period"))}</td><td>{esc(find_row(forma1,"140","sum_end_period"))}</td></tr>
-<tr><td>{S7["c"]}</td><td>210</td><td>{esc(find_row(forma1,"210","sum_begin_period"))}</td><td>{esc(find_row(forma1,"210","sum_end_period"))}</td></tr>
-<tr><td>{S7["d"]}</td><td>400</td><td>{esc(find_row(forma1,"400","sum_begin_period"))}</td><td>{esc(find_row(forma1,"400","sum_end_period"))}</td></tr>
-<tr><td>{S7["e"]}</td><td>601</td><td>{esc(find_row(forma1,"601","sum_begin_period"))}</td><td>{esc(find_row(forma1,"601","sum_end_period"))}</td></tr>
-<tr><td>{S7["f"]}</td><td>570</td><td>{esc(find_row(forma1,"570","sum_begin_period"))}</td><td>{esc(find_row(forma1,"570","sum_end_period"))}</td></tr>
-<tr><td>{S7["g"]}</td><td>730</td><td>{esc(find_row(forma1,"730","sum_begin_period"))}</td><td>{esc(find_row(forma1,"730","sum_end_period"))}</td></tr>
-<tr><td>{S7["h"]}</td><td>780</td><td>{esc(find_row(forma1,"780","sum_begin_period"))}</td><td>{esc(find_row(forma1,"780","sum_end_period"))}</td></tr>
-<tr><td>{L.get("finTitle")}</td><td></td><td></td><td></td></tr>
-<tr><td>{S7["i"]}</td><td>010</td><td>{esc(find_row(forma2,"010","sum_period_doxod"))}</td><td>{esc(find_row(forma2,"010","sum_period_rasxod"))}</td></tr>
-<tr><td>{S7["j"]}</td><td>270</td><td>{esc(find_row(forma2,"270","sum_period_doxod"))}</td><td>{esc(find_row(forma2,"270","sum_period_rasxod"))}</td></tr>
+<table border="1" style="border-collapse: collapse; border: 1px solid black; width: 100%;">
+<tr><th style="border: 1px solid black; padding: 4px;">{L.get("metric")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("row")}</th><th style="border: 1px solid black; padding: 4px;" colspan="2">{esc(company_name)}</th></tr>
+<tr><th style="border: 1px solid black; padding: 4px;"></th><th style="border: 1px solid black; padding: 4px;"></th><th style="border: 1px solid black; padding: 4px;"></th><th style="border: 1px solid black; padding: 4px;"></th></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["a"]}</td><td style="border: 1px solid black; padding: 4px;">010</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"010","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"010","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["b"]}</td><td style="border: 1px solid black; padding: 4px;">140</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"140","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"140","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["c"]}</td><td style="border: 1px solid black; padding: 4px;">210</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"210","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"210","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["d"]}</td><td style="border: 1px solid black; padding: 4px;">400</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"400","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"400","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["e"]}</td><td style="border: 1px solid black; padding: 4px;">601</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"601","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"601","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["f"]}</td><td style="border: 1px solid black; padding: 4px;">570</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"570","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"570","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["g"]}</td><td style="border: 1px solid black; padding: 4px;">730</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"730","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"730","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["h"]}</td><td style="border: 1px solid black; padding: 4px;">780</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"780","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"780","sum_end_period"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{L.get("finTitle")}</td><td style="border: 1px solid black; padding: 4px;"></td><td style="border: 1px solid black; padding: 4px;"></td><td style="border: 1px solid black; padding: 4px;"></td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["i"]}</td><td style="border: 1px solid black; padding: 4px;">010</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"010","sum_period_doxod"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"010","sum_period_rasxod"))}</td></tr>
+<tr><td style="border: 1px solid black; padding: 4px;">{S7["j"]}</td><td style="border: 1px solid black; padding: 4px;">270</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"270","sum_period_doxod"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"270","sum_period_rasxod"))}</td></tr>
 </table>
 
 <p><strong>{L.get("shortAbout")}</strong></br>
@@ -752,20 +750,20 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
 </p>
 
 <p><em><u>{L.get("objs")}</u></em></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
 <tr>
-<th>{L.get("hTin")}</th><th>{L.get("hName")}</th><th>{L.get("hType")}</th><th>{L.get("hCad")}</th><th>{L.get("hObjName")}</th><th>{L.get("hAddr")}</th><th>{L.get("hShare")}</th><th>{L.get("hInvCost")}</th><th>{L.get("hTotalArea")}</th><th>{L.get("hBuildArea")}</th><th>{L.get("hExtraArea")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th>
 </tr>
-{tax_obj_rows or f"<tr><td colspan='11'>---</td></tr>"}
+{tax_obj_rows or f"<tr><td colspan='11' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
 </table>
 
 </br>
 <p><em><u>{L.get("cars")}</u></em></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt;">
+<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
 <tr>
-<th>{L.get("hModel")}</th><th>{L.get("hColor")}</th><th>{L.get("hYear")}</th><th>{L.get("hKuzov")}</th><th>{L.get("hMotor")}</th><th>{L.get("hShassi")}</th><th>{L.get("hGosNumber")}</th><th>{L.get("hRegDate")}</th><th>{L.get("hDivision")}</th><th>{L.get("hOwner")}</th><th>{L.get("hAddr")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hModel")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hColor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hYear")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hKuzov")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hMotor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShassi")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hGosNumber")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hRegDate")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hDivision")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hOwner")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
 </tr>
-{car_obj_rows or f"<tr><td colspan='11'>---</td></tr>"}
+{car_obj_rows or f"<tr><td colspan='11' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
 </table>
 
 </div>
@@ -773,7 +771,7 @@ def build_html(payload: Any, ai_conclusion: str) -> str:
 {ai_conclusion}
 """.strip()
 
-    return html
+    return html.replace("\n", " ").strip()
 
 # ---------------- FastAPI App ----------------
 
@@ -796,100 +794,96 @@ class WebhookRequest(RootModel):
 class WebhookResponse(RootModel):
     root: str
 
-@router.post("/webhook/document", response_model=WebhookResponse)
+@router.post("/webhook/document")
 async def webhook(payload: WebhookRequest):
-    raw_payload = payload.root
+    import time
+    start_time = time.time()
     
-    # Logic from document.py for AI analysis
-    try:
-        if isinstance(raw_payload, list):
-            data_root = raw_payload[0] if raw_payload else {}
-        else:
-            data_root = raw_payload.get("body") if isinstance(raw_payload.get("body"), dict) else raw_payload
-        
-        language = str(data_root.get("language", "uz")).lower()
-        print(f"DEBUG: Processing request with language: {language}")
-        
-        app_info = data_root.get("applicationInfo", {})
-        collateral_data = app_info.get("collateralData", [{}])
-        first_collateral = collateral_data[0] if isinstance(collateral_data, list) and collateral_data else {}
-        estimated_value = float(first_collateral.get("estimatedValue", 0))
-        
-        app_data = app_info.get("applicationData", {})
-        requested_amount = float(app_data.get("requestedAmount", 0))
-        
-        # Logic: (estimatedValue * 0.64 > requestedAmount)
-        is_ltv_good = (estimated_value * 0.64) > requested_amount
-        
-        ltv_status_text = "Ijobiy (Positive)" if is_ltv_good else "Salbiy (Negative)"
-        
-        decision_instruction = (
-            "SIZNING XULOSANGIZ: 1-VARIANT (Kredit berish tavsiya qilinadi). Chunki LTV ko'rsatkichi talab darajasida (64% dan past)."
-            if is_ltv_good
-            else "SIZNING XULOSANGIZ: 2-VARIANT (Kommitet tomonidan ko'rib chiqiladi). Chunki LTV ko'rsatkichi yuqori (64% dan yuqori), bu risk hisoblanadi."
+    raw_payload = payload.root
+    # Determine body
+    if isinstance(raw_payload, list):
+        body = raw_payload[0] if raw_payload else {}
+    else:
+        body = raw_payload.get("body") if isinstance(raw_payload.get("body"), dict) else raw_payload
+
+    # 1. Prepare Logic Variables
+    # LTV Logic
+    app_info = body.get("applicationInfo", {}) or {}
+    collateral_data = safe_arr(app_info.get("collateralData"))
+    first_collateral = collateral_data[0] if collateral_data else {}
+    estimated_value = float(first_collateral.get("estimatedValue") or 0)
+    
+    app_data = app_info.get("applicationData", {}) or {}
+    requested_amount = float(app_data.get("requestedAmount") or 0)
+    
+    # "Garov (LTV - Kreditning qiymatga nisbati): Agar taqdim etilgan garov kredit miqdoridan sezilarli darajada ortiq bo'lsa, 
+    # LTV (Kreditning qiymatga nisbati) 64% gacha bo'lgan nisbat (estimated * 0.64 > requested) ijobiy hisoblanadi."
+    is_ltv_good = (estimated_value * 0.64) > requested_amount
+    ltv_status_text = "Ijobiy" if is_ltv_good else "Salbiy"
+
+    # Conclusion Logic
+    # "Agar conclusion = 'POSITIVE' ..."
+    conclusion_field = str(body.get("conclusion", "NEUTRAL")).upper()
+
+    # Logic from n8n prompt
+    logic_text = ""
+    if conclusion_field == "POSITIVE":
+        logic_text = (
+            "• Agar conclusion = \"POSITIVE\" bo‘lsa, xulosada faqat ijobiy/kuchli jihatlar va kreditni qo‘llab-quvvatlovchi dalillar yoritilsin; "
+            "salbiy tomonlar, kamchiliklar va risklar tilga olinmasin."
+        )
+    elif conclusion_field == "NEGATIVE":
+        logic_text = (
+            "• Agar conclusion = \"NEGATIVE\" bo‘lsa, xulosada ko'proq salbiy tomonlar/risklar va kreditni rad etishga olib keladigan dalillar yoritilsin; "
+            "ijobiy tomonlar va kuchli jihatlar kamaytirilsin olinmasin."
+        )
+    else: # NEUTRAL
+        logic_text = (
+            "• Agar conclusion = NEUTRAL bo‘lsa, mavjud umumiy logika saqlanib qolsin, standart qoidalar asosida shakllantirilsin."
         )
 
-        # Language mapping for LLM understanding
-        lang_map = {
-            "uz": "O'zbek tili (Lotin alifbosi). Javob faqat Lotin alifbosida bo'lishi shart.",
-            "cyrl": "O'zbek tili (Kirill alifbosi). Javob faqat Kirill alifbosida bo'lishi shart. (Masalan: 'Хулоса...', 'Кредит бериш...'). Lotin alifbosidan foydalanish TAQIQLANADI.",
-            "ru": "Rus tili (Kirill alifbosi).",
-            "en": "Ingliz tili."
-        }
-        lang_desc = lang_map.get(language, language)
-        
-    except Exception as e:
-        print(f"Error parsing logic fields: {e}")
-        language = "uz"
-        lang_desc = "O'zbek tili (Lotin alifbosi)"
-        is_ltv_good = False
-        ltv_status_text = "Noma'lum (Error in calculation)"
-        decision_instruction = "Xatolik yuz berdi, 2-VARIANTni tanlang."
-
-    # Format input for LLM visibility
+    # 2. Build Prompt
+    # We pass the entire JSON as context
     try:
         input_json_str = json.dumps(raw_payload, ensure_ascii=False, indent=2)
     except (TypeError, ValueError) as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+        input_json_str = "{}" # Should not happen based on pydantic model
 
     system_prompt = f"""Siz professional AI yordamchisiz. 
 
-Sizning vazifangiz: Yakuniy kredit bo‘yicha ekspert xulosasi yaratish.
+Sizning vazifangiz: Yakuniy kredit bo‘yicha ekspert xulosasi yaratish,
 
-Kelgan JSONda "language" fieldida qaysi tilda xulosa yaratish aytilgan: {language}.
-Tavsif: {lang_desc}
+Xulosa har doim 4 ta tilda bir vaqtning o‘zida yaratiladi:
 
-Qat'iy qoida va muhim qoida:
-• HECH QACHON, HECH BIR SO'Z HAM SO'RALGAN TILDAN BOSHQA TILDA CHIQMASIN! HAR BIR SO'Z VA HAR BIR GAP BELGILANGAN TILGAN TARJIMA QILINSIN!
-• Agar 'cyrl' (Kirill) so'ralsa, javobni to'liq KIRILL alifbosida yozing. Lotin harflari aralashtrilmasin!
-• YAXSHILAB UYLAB BIRNECHA MARTA TEKSHIKIB KEYIN RESULT BERILSIN
+1) O‘zbek lotin (UZ)
+2) O‘zbek kirill (CYRL)
+3) Rus tili (RU)
+4) Ingliz tili (EN)
+
+Har bir til alohida va mustaqil <div> da bo‘lishi shart.
+Bir til ichida boshqa til aralashmasin.
 
 <h3>Yakuniy kredit bo‘yicha ekspert xulosasi</h3>
 
 Xulosa quyidagilar asosida avtomatik shakllantiriladi:
+
 ✓ Kompaniya faoliyat holati  
 ✓ Har doim forma bo‘yicha 
 ✓ Pul oqimi  
 ✓ Zalog likvidligi  
-✓ Risklar
+✓ Risklar  Kredit berish tavsiya qilinadi
 ✓ Kuchli tomonlar  
-
-Yuqoridagi natijalar hammasi qisqa londa bo'lsin. Hammasi bitta paragraphda yozilsin.
+yuqoridagi natijalar hammasi qisqa londa bo'lsin. Hammasi bitta paragraphda yozilsin.
 
 Kredit berish xulosasini tuzish bo'yicha logika:
 - Moliyaviy yuk (Aylanma darajasi). Agar so'ralgan kredit summasi kompaniyaning yillik aylanmasidan oshiq bo'lsa, bunday holatni past kredit havfi va kredit bo'yicha qarzni to'lamaslik ehtimoli sifatida baholashingiz kerak.
 - Garov (LTV - Kreditning qiymatga nisbati):
-Agar taqdim etilgan garov kredit miqdoridan sezilarli darajada ortiq bo'lsa, LTV (Kreditning qiymatga nisbati) 64% gacha bo'lgan nisbat ijobiy hisoblanadi.
-Hozirgi holatda hisob-kitob natijasi: {ltv_status_text}.
+Agar taqdim etilgan garov kredit miqdoridan sezilarli darajada ortiq bo'lsa, LTV (Kreditning qiymatga nisbati) 64% gacha bo'lgan nisbat ({estimated_value} * 0.64 > {requested_amount} = {is_ltv_good}) ijobiy hisoblanadi.
 
-XULOSA QUYIDAGILARDAN BIRI BO‘LISHI SHART, VA ULAR HAM BELGILANGAN TILGA ({language}) TARJIMA QILINISHI SHART:
+XULOSA QUYIDAGILARDAN BIRI BO‘LISHI SHART, VA ULAR HAM BELGILANGAN TILGA TARJIMA QILINISHI SHART:
 
-1) Agar kredit berish tavsiya etilsa: <strong> Kredit berish tavsiya qilinadi </strong>
-2) Agar kredit berish tavsiya etilmasa: <strong> Kommitet tomonidan ko'rib chiqiladi </strong>
-
-QAT'IY BUYRUQ:
-{decision_instruction}
-Siz ushbu buyruqni o'zgartirishga haqqingiz yo'q. Faqat shu xulosani tanlab, uning sababini izohlashingiz kerak.
+1) Agar kredit berish tavsiya etilsa: <strong> Kredit berish tavsiya qilinadi </strong> <- albatta tegishli tilga tarjima qilinishi kerak
+2) Agar kredit berish tavsiya etilmasa: <strong> Kommitet tomonidan ko'rib chiqiladi </strong> <- albatta tegishli tilga tarjima qilinishi kerak
 
 Yuqoridagi ikkita holat, hulosa ham albatta belgilangan tilgan tajrima qilish kerak, va o'sha tilda chiqarish kerak, boshqa tildagi qo'shimchalar bo'lmasin! Hech qachon belgilangan tildan boshqasiga tarjima qilmang!
 
@@ -904,18 +898,82 @@ Va albatta izohlar bilan:
 Qat'iy qoidalar:
 • Har doim belgilangan tilgan tarjima qilishinshi shart. 
 • Ovoz ohangi — professional bank ekspertizasi
-• Javob juda ham sifatli va juda ham tez bo'lishi lozim.
+• Javob juda ham sifatli va juda ham tez bo'lishi lozim. Foydalanuvchi kutib qolmasligi uchun!
+• Textlar toza natija bo'lishi kerkak.
 • Chiquvchi text malumotlar ham tartibli kerakli joylar alohida korsatilgan holatda bolishi kerak.
-• "language" fieldida so'ralgan tilda ({language}) javob generatsiya qilish lozim!
-• Kredit tavsiya berish yoki bermaslik tavsiyasi <strong> tag ichida bulishi shard
+• "language" fieldida so'ralgan tilda javob generatsiya qilish lozim!
+• Kredit  tavsiya berish yoki bermaslik tavsiyasi <strong> tag ichida bulishi shart
+{logic_text}
 """
 
-    agent = create_agent(model=llm, tools=[], system_prompt=system_prompt)
+    # 3. Call LLM
+    # We want structured JSON output: { "uz": "...", "cyrl": "...", "ru": "...", "en": "..." }
+    # langchain_openai ChatOpenAI supports binding response_format if using correct model params, 
+    # but here we can just instruct it in the system prompt or use tool calling.
+    # To keep it simple and robust with gpt-4o, we can use valid JSON mode if supported or just prompt instructions.
     
-    result = agent.invoke({"messages": [{"role": "user", "content": input_json_str}]})
-    ai_response_html = result["messages"][-1].content
+    # Let's enforce JSON output structure in the prompt or use with_structured_output if available (langchain 0.1+)
+    # Given the import `from langchain.agents import create_agent`, we might be on an older version or using agents.
+    # Let's just ask for JSON in the user message.
     
-    # Combine Code-based HTML Generation with AI Response
-    full_html = build_html(payload.root, ai_response_html)
+    user_prompt = f"""Process the following data and return the result as a raw JSON object with keys: "uz", "cyrl", "ru", "en".
+Each key should contain the HTML string for the expert conclusion in that language.
+Do not wrap the JSON in markdown code blocks.
+
+Data:
+{input_json_str}
+"""
+
+    # We can try to use standard invoke.
+    try:
+        # Check if we can use json_mode
+        llm_json = llm.bind(response_format={"type": "json_object"})
+        result = llm_json.invoke([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ])
+        ai_content = result.content
+    except Exception as e:
+        # Fallback if bind not supported
+        result = llm.invoke([
+            {"role": "system", "content": system_prompt + "\nRETURN JSON OBJECT ONLY."},
+            {"role": "user", "content": user_prompt}
+        ])
+        ai_content = result.content
+
+    # 4. Parse JSON
+    try:
+        # Clean potential markdown wrapping
+        cleaned_content = ai_content.strip()
+        if cleaned_content.startswith("```json"):
+            cleaned_content = cleaned_content[7:]
+        if cleaned_content.endswith("```"):
+            cleaned_content = cleaned_content[:-3]
+        
+        ai_conclusions = json.loads(cleaned_content)
+    except Exception as e:
+        print(f"Error parse JSON from AI: {e}")
+        # Fallback: assign same content to all or error
+        fallback_text = str(ai_content)
+        ai_conclusions = {
+            "uz": fallback_text,
+            "cyrl": fallback_text,
+            "ru": fallback_text,
+            "en": fallback_text
+        }
+
+    # 5. Build HTML for each language
+    html_results = {}
+    for lang in ["uz", "cyrl", "ru", "en"]:
+        conclusion_text = ai_conclusions.get(lang, "---")
+        raw_html = build_html_for_lang(raw_payload, conclusion_text, lang)
+        # Remove newlines for cleaner JSON string
+        html_results[lang] = raw_html.replace("\n", " ").strip()
+
+    end_time = time.time()
     
-    return HTMLResponse(content=full_html, status_code=200)
+    # 6. Return
+    return {
+        "html": html_results,
+        "time": end_time - start_time
+    }
