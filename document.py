@@ -856,7 +856,8 @@ llm = ChatOpenAI(
 
 
 class WebhookRequest(RootModel):
-    root: dict | list
+    root: Any
+
 
 class WebhookResponse(RootModel):
     root: str
