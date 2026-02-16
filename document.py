@@ -102,6 +102,22 @@ def find_row(rows: Any, row_no: str, field: str) -> str:
         return "---"
     return num_format(v)
 
+def year_from_any_date(v: Any) -> str:
+    s = val(v)
+    if s == "---":
+        return "---"
+    m = re.search(r"(19|20)\d{2}", str(s))
+    return m.group(0) if m else "---"
+
+def normalize_br(s: Any) -> str:
+    return (
+        str(s)
+        .replace("</br>", "<br>")
+        .replace("<br/>", "<br>")
+        .replace("<br />", "<br>")
+    )
+
+
 def get_in(d: Any, path: List[Any], default=None):
     cur = d
     for key in path:
@@ -375,44 +391,44 @@ DICT = {
         "mfo": "МФО",
         "appShort": "Краткая информация о проекте",
         "appDesc": "Описание проекта",
-        "started": "-году начала свою деятельность.",
-        "mainAct": "Основная деятельность компании",
-        "applied2": "обратилась в банк с предложением о рассмотрении заключения генерального кредитного договора на цели",
-        "applied3": "Максимальный лимит кредитования",
-        "term": "месяцев.",
-        "rates": "Процентные ставки по кредитам: 15% годовых в долларах США, 15% годовых в евро и в национальной валюте",
-        "sourcePay": "Источником погашения обязательств является текущая деятельность компании.",
+        "started": "начал деятельность в",
+        "mainAct": "Основной вид деятельности компании",
+        "applied2": "обратилось в банк с запросом по цели:",
+        "applied3": "Максимальный кредитный лимит",
+        "term": "Срок",
+        "rates": "Процентные ставки по кредиту:",
+        "sourcePay": "Источник погашения обязательств — доходы от текущей деятельности компании.",
         "bankFill": "Заполняется банком",
-        "mainObj": "Основной объект (офис, здание, склад, жилое помещение), зарегистрированный на компанию, находится по адресу:",
+        "mainObj": "Основной объект предприятия (офис, здание, склад, жилое помещение) расположен по адресу:",
         "totalArea": "общая площадь",
-        "buildArea": "площадь зданий и сооружений",
+        "buildArea": "площадь здания и сооружений",
         "cad": "кадастровый номер",
-        "belongs": "Эта земля принадлежит",
+        "belongs": "Данный земельный участок принадлежит",
         "belongs2": ".",
-        "infra": "Территория оснащена необходимыми коммунальными услугами и коммуникациями.",
-        "built": "На этой территории компания построила новое административное здание площадью",
+        "infra": "Территория обеспечена необходимыми коммунальными услугами и коммуникациями.",
+        "built": "На данной территории компания построила новое административное здание площадью",
         "built2": "кв.м.",
         "collateralTitle": "Информация о залоге",
-        "reTitle": "Данные о заложенной недвижимости:",
-        "carTitle": "Данные о заложенных транспортных средствах:",
-        "balanceTitle": "Отчет по балансу:",
+        "reTitle": "Данные по заложенной недвижимости:",
+        "carTitle": "Данные по заложенному транспортному средству:",
+        "balanceTitle": "Отчёт по балансу:",
         "metric": "Наименование показателя",
         "row": "Строка",
         "finTitle": "Финансовые показатели",
-        "shortAbout": "Краткая справка о предприятии:",
-        "objs": "Объекты, числящиеся за предприятием:",
-        "cars": "Транспортные средства, числящиеся за предприятием:",
+        "shortAbout": "Краткая информация о компании:",
+        "objs": "Объекты, зарегистрированные на компанию:",
+        "cars": "Транспортные средства, зарегистрированные на компанию:",
         "hTin": "ИНН",
-        "hName": "Наименование организации",
+        "hName": "Наименование",
         "hType": "Тип",
         "hCad": "Кадастровый номер",
-        "hObjName": "Наименование здания",
+        "hObjName": "Наименование объекта",
         "hAddr": "Адрес",
-        "hShare": "Доля собственника (%)",
+        "hShare": "Доля владения (%)",
         "hInvCost": "Инвентарная стоимость",
         "hTotalArea": "Общая площадь",
         "hBuildArea": "Площадь здания",
-        "hExtraArea": "Дополнительная площадь",
+        "hExtraArea": "Доп. площадь",
         "hEstValue": "Оценочная стоимость залога",
         "hModel": "Модель",
         "hColor": "Цвет",
@@ -423,10 +439,11 @@ DICT = {
         "hGosNumber": "Гос. номер",
         "hRegDate": "Дата регистрации",
         "hDivision": "Подразделение",
-        "hOwner": "Собственник",
+        "hOwner": "Владелец",
         "unitArea": "кв.м.",
     },
 }
+
 
 # ---------------- main builder (adapted from code.py) ----------------
 
@@ -476,19 +493,16 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 
     purpose = purpose_by_lang()
     requested_amount = num_format(app_data.get("requestedAmount"))
-    currency = val(app_data.get("currency"))
+    currency_raw = val(app_data.get("currency"))
+    currency = "UZS" if currency_raw == "---" else currency_raw
+
     loan_term_months = val(app_data.get("loanTermMonths"))
     down_payment_percent = val(app_data.get("downPaymentPercent"))
 
-    first_tax_obj = (safe_arr(tax_objects.get("dataObject"))[0] if safe_arr(tax_objects.get("dataObject")) else {}) or {}
-    main_obj_addr = val(first_tax_obj.get("address"))
-    main_obj_total = num_format(first_tax_obj.get("total_area"))
-    main_obj_land = num_format(first_tax_obj.get("land_area"))
-    main_obj_cad = val(first_tax_obj.get("obj_code"))
-    main_obj_extra = num_format(first_tax_obj.get("land_extra_area"))
-
-    foundation_year = reg_date[:4] if reg_date != "---" and re.match(r"^\d{4}", reg_date) else "---"
+    reg_date = val(bank_info.get("regDate"))
+    foundation_year = year_from_any_date(reg_date)
     buildings = str(len(safe_arr(tax_objects.get("dataObject"))) or "---")
+
 
     def land_area_sum() -> str:
         s = 0.0
@@ -503,7 +517,16 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
         return num_format(s) if s > 0 else "---"
 
     land_area = land_area_sum()
-    ua = L.get("unitArea")
+
+    first_tax_obj = (safe_arr(tax_objects.get("dataObject"))[0] if safe_arr(tax_objects.get("dataObject")) else {}) or {}
+    main_obj_addr = val(first_tax_obj.get("address"))
+    main_obj_total = num_format(first_tax_obj.get("total_area"))
+    main_obj_land = num_format(first_tax_obj.get("land_area"))
+    main_obj_cad = val(first_tax_obj.get("obj_code"))
+    main_obj_extra = num_format(first_tax_obj.get("land_extra_area"))
+
+    ua = "sq.m." if language == "en" else "кв.м."
+
 
     # founders
     founders_html = ""
@@ -654,29 +677,29 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 
 <h2>{L.get("hProject")}: {esc(company_name)}</h2>
 <h3>{L.get("hCompany")}</h3>
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("orgFull")}</td><td style="border: 1px solid black; padding: 4px;">{esc(company_name)}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("inn")}</td><td style="border: 1px solid black; padding: 4px;">{esc(tin)}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("oked")}</td><td style="border: 1px solid black; padding: 4px;">{esc(oked)}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("cat")}</td><td style="border: 1px solid black; padding: 4px;">{esc(category)}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("emp")}</td><td style="border: 1px solid black; padding: 4px;">{esc(employee_count)}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("addr")}</td><td style="border: 1px solid black; padding: 4px;">{esc(legal_address)}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("fund")}</td><td style="border: 1px solid black; padding: 4px;">{esc(business_fund)}</td></tr>
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
+<tr><td>{L.get("orgFull")}</td><td>{esc(company_name)}</td></tr>
+<tr><td>{L.get("inn")}</td><td>{esc(tin)}</td></tr>
+<tr><td>{L.get("oked")}</td><td>{esc(oked)}</td></tr>
+<tr><td>{L.get("cat")}</td><td>{esc(category)}</td></tr>
+<tr><td>{L.get("emp")}</td><td>{esc(employee_count)}</td></tr>
+<tr><td>{L.get("addr")}</td><td>{esc(legal_address)}</td></tr>
+<tr><td>{L.get("fund")}</td><td>{esc(business_fund)}</td></tr>
 </table>
 
 <h2>{L.get("foundersTitle")}</h2>
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
-<tr><th style="border: 1px solid black; padding: 4px;">{L.get("fio")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("who")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("share")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("other")}</th></tr>
-{founders_html or "<tr><td style='border: 1px solid black; padding: 4px;'>---</td><td style='border: 1px solid black; padding: 4px;'>---</td><td style='border: 1px solid black; padding: 4px;'>---</td><td style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
-<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("director")}</b></td><td style="border: 1px solid black; padding: 4px;" colspan="3">{esc(director_name)}</td></tr>
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
+<tr><th>{L.get("fio")}</th><th>{L.get("who")}</th><th>{L.get("share")}</th><th>{L.get("other")}</th></tr>
+{founders_html or "<tr><td>---</td><td>---</td><td>---</td><td>---</td></tr>"}
+<tr><td><b>{L.get("director")}</b></td><td colspan="3">{esc(director_name)}</td></tr>
 </table>
 
 <p><em><u>{L.get("bankReq")}</u></em></p>
 <p><strong>{L.get("mainAcc")}</strong></p>
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
-<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("bankName")}</b></td><td style="border: 1px solid black; padding: 4px;">{esc(val(bank_info.get("ns2Name")))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("acc")}</b></td><td style="border: 1px solid black; padding: 4px;">{esc(bank_acc_format(bank_info.get("account")))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;"><b>{L.get("mfo")}</b></td><td style="border: 1px solid black; padding: 4px;">{esc(val(bank_info.get("ns2Code")))}</td></tr>
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
+<tr><td><b>{L.get("bankName")}</b></td><td>{esc(val(bank_info.get("ns2Name")))}</td></tr>
+<tr><td><b>{L.get("acc")}</b></td><td>{esc(bank_acc_format(bank_info.get("account")))}</td></tr>
+<tr><td><b>{L.get("mfo")}</b></td><td>{esc(val(bank_info.get("ns2Code")))}</td></tr>
 </table>
 
 <p><strong><u>{L.get("appShort")}</u></strong></br>
@@ -684,11 +707,9 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 <strong><u>{esc(company_name)} {esc(reg_date)} {L.get("started")}</u></strong></br></br>
 {L.get("mainAct")} {esc(oked)}.</br>
 <strong><u>{esc(company_name)}</u></strong> {L.get("applied2")} {esc(purpose)}</br>
-{"{0}: {1} {2}; {3}: {4}.".format(L.get("applied3"), esc(requested_amount), esc(currency), L.get("term"), esc(loan_term_months))
-   if language == "ru"
-   else "{0}: {1} {2}; {3}: {4} months.".format(L.get("applied3"), esc(requested_amount), esc(currency), L.get("term"), esc(loan_term_months))
-   if language == "en"
-   else "{0} {1} {2}, {3} {4}".format(L.get("applied3"), esc(requested_amount), esc(currency), esc(loan_term_months), L.get("term"))
+{ (f"{L.get('applied3')}: {esc(requested_amount)} {esc(currency)}; {L.get('term')}: {esc(loan_term_months)}.") if language == "ru"
+  else (f"{L.get('applied3')}: {esc(requested_amount)} {esc(currency)}; {L.get('term')}: {esc(loan_term_months)} months.") if language == "en"
+  else (f"{L.get('applied3')} {esc(requested_amount)} {esc(currency)}, {esc(loan_term_months)} {L.get('term')}")
 }</br>
 {L.get("rates")} {esc(num_format(down_payment_percent))}%.</br></br>
 <strong><u>{L.get("sourcePay")}</u></strong></p>
@@ -699,71 +720,116 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 {L.get("infra")}</br>
 {L.get("built")} {esc(main_obj_extra)} {ua} {L.get("built2") if language in ("uz","cyrl") else ""}</p>
 
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<h3>{L.get("collateralTitle")}</h3>
+<p><em><u>{L.get("reTitle")}</u></em></p>
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
 <tr>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hEstValue")}</th>
+<th>TIN</th>
+<th>{"Company name" if language == "en" else ("Наименование" if language == "ru" else "Kompaniya nomi")}</th>
+<th>{"Type" if language == "en" else ("Тип" if language == "ru" else "Turi")}</th>
+<th>{"Cadastral number" if language == "en" else ("Кадастровый номер" if language == "ru" else "Kadastr raqami")}</th>
+<th>{"Property name" if language == "en" else ("Наименование объекта" if language == "ru" else "Bino nomi")}</th>
+<th>{"Address" if language == "en" else ("Адрес" if language == "ru" else "Manzili")}</th>
+<th>{"Ownership share (%)" if language == "en" else ("Доля владения (%)" if language == "ru" else "Egalik qiluvchi ulushi (%)")}</th>
+<th>{"Inventory value" if language == "en" else ("Инвентарная стоимость" if language == "ru" else "Inventar narx")}</th>
+<th>{"Total area" if language == "en" else ("Общая площадь" if language == "ru" else "Umumiy maydon")}</th>
+<th>{"Building area" if language == "en" else ("Площадь здания" if language == "ru" else "Bino maydoni")}</th>
+<th>{"Additional area" if language == "en" else ("Дополнительная площадь" if language == "ru" else "Qo'shimcha maydon")}</th>
+<th>{"Estimated collateral value" if language == "en" else ("Оценочная стоимость залога" if language == "ru" else "Garovning taxminiy qiymati")}</th>
 </tr>
-{collateral_real_estate or f"<tr><td colspan='12' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
+{collateral_real_estate or "<tr><td colspan='12'>---</td></tr>"}
 </table>
 
 </br>
 <p><em><u>{L.get("carTitle")}</u></em></p>
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
 <tr>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hModel")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hColor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hYear")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hKuzov")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hMotor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShassi")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hGosNumber")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hRegDate")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hDivision")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hOwner")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hEstValue")}</th>
+<th>{"Model" if language == "en" else ("Модель" if language == "ru" else "Modeli")}</th>
+<th>{"Color" if language == "en" else ("Цвет" if language == "ru" else "Rangi")}</th>
+<th>{"Year" if language == "en" else ("Год" if language == "ru" else "Yil")}</th>
+<th>{"Body number" if language == "en" else ("Номер кузова" if language == "ru" else "Kuzov raqami")}</th>
+<th>{"Engine" if language == "en" else ("Двигатель" if language == "ru" else "Motor")}</th>
+<th>{"Chassis" if language == "en" else ("Шасси" if language == "ru" else "Shassi")}</th>
+<th>{"License plate" if language == "en" else ("Гос. номер" if language == "ru" else "Davlat raqami")}</th>
+<th>{"Registration date" if language == "en" else ("Дата регистрации" if language == "ru" else "Ro'yxatdan o'tgan sana")}</th>
+<th>{"Division" if language == "en" else ("Подразделение" if language == "ru" else "Diviziya")}</th>
+<th>{"Owner" if language == "en" else ("Владелец" if language == "ru" else "Egalik qiluvchi")}</th>
+<th>{"Address" if language == "en" else ("Адрес" if language == "ru" else "Manzili")}</th>
+<th>{"Estimated collateral value" if language == "en" else ("Оценочная стоимость залога" if language == "ru" else "Garovning taxminiy qiymati")}</th>
 </tr>
-{collateral_cars or f"<tr><td colspan='12' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
+{collateral_cars or "<tr><td colspan='12'>---</td></tr>"}
 </table>
 
 <p><i><u>{L.get("balanceTitle")}</u></i></p>
-<table border="1" style="border-collapse: collapse; border: 1px solid black; width: 100%;">
-<tr><th style="border: 1px solid black; padding: 4px;">{L.get("metric")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("row")}</th><th style="border: 1px solid black; padding: 4px;" colspan="2">{esc(company_name)}</th></tr>
-<tr><th style="border: 1px solid black; padding: 4px;"></th><th style="border: 1px solid black; padding: 4px;"></th><th style="border: 1px solid black; padding: 4px;"></th><th style="border: 1px solid black; padding: 4px;"></th></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["a"]}</td><td style="border: 1px solid black; padding: 4px;">010</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"010","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"010","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["b"]}</td><td style="border: 1px solid black; padding: 4px;">140</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"140","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"140","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["c"]}</td><td style="border: 1px solid black; padding: 4px;">210</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"210","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"210","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["d"]}</td><td style="border: 1px solid black; padding: 4px;">400</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"400","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"400","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["e"]}</td><td style="border: 1px solid black; padding: 4px;">601</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"601","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"601","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["f"]}</td><td style="border: 1px solid black; padding: 4px;">570</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"570","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"570","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["g"]}</td><td style="border: 1px solid black; padding: 4px;">730</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"730","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"730","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["h"]}</td><td style="border: 1px solid black; padding: 4px;">780</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"780","sum_begin_period"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma1,"780","sum_end_period"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{L.get("finTitle")}</td><td style="border: 1px solid black; padding: 4px;"></td><td style="border: 1px solid black; padding: 4px;"></td><td style="border: 1px solid black; padding: 4px;"></td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["i"]}</td><td style="border: 1px solid black; padding: 4px;">010</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"010","sum_period_doxod"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"010","sum_period_rasxod"))}</td></tr>
-<tr><td style="border: 1px solid black; padding: 4px;">{S7["j"]}</td><td style="border: 1px solid black; padding: 4px;">270</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"270","sum_period_doxod"))}</td><td style="border: 1px solid black; padding: 4px;">{esc(find_row(forma2,"270","sum_period_rasxod"))}</td></tr>
+<table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; width: 100%;">
+<tr><th>{L.get("metric")}</th><th>{L.get("row")}</th><th colspan="2">{esc(company_name)}</th></tr>
+<tr><th></th><th></th><th></th><th></th></tr>
+<tr><td>{S7["a"]}</td><td>010</td><td>{esc(find_row(forma1,"010","sum_begin_period"))}</td><td>{esc(find_row(forma1,"010","sum_end_period"))}</td></tr>
+<tr><td>{S7["b"]}</td><td>140</td><td>{esc(find_row(forma1,"140","sum_begin_period"))}</td><td>{esc(find_row(forma1,"140","sum_end_period"))}</td></tr>
+<tr><td>{S7["c"]}</td><td>210</td><td>{esc(find_row(forma1,"210","sum_begin_period"))}</td><td>{esc(find_row(forma1,"210","sum_end_period"))}</td></tr>
+<tr><td>{S7["d"]}</td><td>400</td><td>{esc(find_row(forma1,"400","sum_begin_period"))}</td><td>{esc(find_row(forma1,"400","sum_end_period"))}</td></tr>
+<tr><td>{S7["e"]}</td><td>601</td><td>{esc(find_row(forma1,"601","sum_begin_period"))}</td><td>{esc(find_row(forma1,"601","sum_end_period"))}</td></tr>
+<tr><td>{S7["f"]}</td><td>570</td><td>{esc(find_row(forma1,"570","sum_begin_period"))}</td><td>{esc(find_row(forma1,"570","sum_end_period"))}</td></tr>
+<tr><td>{S7["g"]}</td><td>730</td><td>{esc(find_row(forma1,"730","sum_begin_period"))}</td><td>{esc(find_row(forma1,"730","sum_end_period"))}</td></tr>
+<tr><td>{S7["h"]}</td><td>780</td><td>{esc(find_row(forma1,"780","sum_begin_period"))}</td><td>{esc(find_row(forma1,"780","sum_end_period"))}</td></tr>
+<tr><td>{L.get("finTitle")}</td><td></td><td></td><td></td></tr>
+<tr><td>{S7["i"]}</td><td>010</td><td>{esc(find_row(forma2,"010","sum_period_doxod"))}</td><td>{esc(find_row(forma2,"010","sum_period_rasxod"))}</td></tr>
+<tr><td>{S7["j"]}</td><td>270</td><td>{esc(find_row(forma2,"270","sum_period_doxod"))}</td><td>{esc(find_row(forma2,"270","sum_period_rasxod"))}</td></tr>
 </table>
 
 <p><strong>{L.get("shortAbout")}</strong></br>
-{(
-    f"Test Company LLC korxonasi {esc(foundation_year)} yildan beri faoliyat yuritib, asosan {esc(oked)} sohasida xizmat ko‘rsatib keladi.</br>"
-    f"Korxona yuridik manzili: {esc(legal_address)}.</br>"
-    f"Korxona balansida {esc(buildings)} dona bino va {esc(land_area)} {ua} yer maydoni mavjud bo‘lib, hudud zarur infratuzilma va kommunikatsiyalar bilan ta’minlangan.</br>"
-    f"Tashkilotda {esc(employee_count)} nafar xodim ishlaydi va ishlab chiqarish quvvati yil sayin oshmoqda.</br>"
-    f"Moliyaviy ko‘rsatkichlar va bozordagi obro‘-e’tibori, shuningdek, aktivlarning likvidligi korxonaga yuqori ishonch beradi."
-) if language == "uz" else (
-    f"Test Company LLC корхонаси {esc(foundation_year)} йилдан бери фаолият юритиб, асосан {esc(oked)} соҳасида хизмат кўрсатиб келади.</br>"
-    f"Корхона юридик манзили: {esc(legal_address)}.</br>"
-    f"Корхона балансида {esc(buildings)} дона бино ва {esc(land_area)} {ua} ер майдони мавжуд бўлиб, ҳудуд зарур инфратузилма ва коммуникациялар билан таъминланган.</br>"
-    f"Ташкилотда {esc(employee_count)} нафар ходим ишлайди ва ишлаб чиқариш қуввати йил сайин ошмоқда.</br>"
-    f"Молиявий кўрсаткичлар ва бозордаги обрў-эътибори, шунингдек, активларнинг ликвидлиги корхонага юқори ишонч беради."
-) if language == "cyrl" else "---"}
+{ (f"Предприятие {esc(company_name)} осуществляет деятельность с {esc(foundation_year)} года и в основном работает в сфере {esc(oked)}.</br>"
+   f"Юридический адрес: {esc(legal_address)}.</br>"
+   f"На балансе предприятия: {esc(buildings)} объект(ов) недвижимости и {esc(land_area)} {ua} земельных участков; территория обеспечена инфраструктурой и коммуникациями.</br>"
+   f"Средняя численность сотрудников: {esc(employee_count)}.</br>"
+   f"Финансовые показатели, деловая репутация и ликвидность активов формируют высокий уровень доверия к предприятию."
+  ) if language == "ru" else (
+   f"{esc(company_name)} has been operating since {esc(foundation_year)} and primarily provides services in the field of {esc(oked)}.</br>"
+   f"Legal address: {esc(legal_address)}.</br>"
+   f"The company’s balance includes {esc(buildings)} building(s) and {esc(land_area)} {ua} of land; the territory is supplied with the necessary infrastructure and communications.</br>"
+   f"Average number of employees: {esc(employee_count)}.</br>"
+   f"Financial performance, market reputation, and asset liquidity provide a strong basis for confidence in the company."
+  ) if language == "en" else (
+   f"{esc(company_name)} корхонаси {esc(foundation_year)} йилдан бери фаолият юритиб, асосан {esc(oked)} соҳасида хизмат кўрсатиб келади.</br>"
+   f"Корхона юридик манзили: {esc(legal_address)}.</br>"
+   f"Корхона балансида {esc(buildings)} дона бино ва {esc(land_area)} {ua} ер майдони мавжуд бўлиб, ҳудуд зарур инфратузилма ва коммуникациялар билан таъминланган.</br>"
+   f"Ташкилотда {esc(employee_count)} нафар ходим ишлайди ва ишлаб чиқариш қуввати йил сайин ошмоқда.</br>"
+   f"Молиявий кўрсаткичлар ва бозордаги обрў-эътибори, шунингдек, активларнинг ликвидлиги корхонага юқори ишонч беради."
+  ) if language == "cyrl" else (
+   f"{esc(company_name)} korxonasi {esc(foundation_year)} yildan beri faoliyat yuritib, asosan {esc(oked)} sohasida xizmat ko‘rsatib keladi.</br>"
+   f"Korxona yuridik manzili: {esc(legal_address)}.</br>"
+   f"Korxona balansida {esc(buildings)} dona bino va {esc(land_area)} {ua} yer maydoni mavjud bo‘lib, hudud zarur infratuzilma va kommunikatsiyalar bilan ta’minlangan.</br>"
+   f"Tashkilotda {esc(employee_count)} nafar xodim ishlaydi va ishlab chiqarish quvvati yil sayin oshmoqda.</br>"
+   f"Moliyaviy ko‘rsatkichlar va bozordagi obro‘-e’tibori, shuningdek, aktivlarning likvidligi korxonaga yuqori ishonch beradi."
+  )
+}
 </p>
 
 <p><em><u>{L.get("objs")}</u></em></p>
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
 <tr>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th>
 </tr>
-{tax_obj_rows or f"<tr><td colspan='11' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
+{tax_obj_rows or "<tr><td colspan='11'>---</td></tr>"}
 </table>
 
 </br>
 <p><em><u>{L.get("cars")}</u></em></p>
-<table border="1" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse; border: 1px solid black; width: 100%;">
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
 <tr>
 <th style="border: 1px solid black; padding: 4px;">{L.get("hModel")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hColor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hYear")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hKuzov")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hMotor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShassi")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hGosNumber")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hRegDate")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hDivision")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hOwner")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
 </tr>
-{car_obj_rows or f"<tr><td colspan='11' style='border: 1px solid black; padding: 4px;'>---</td></tr>"}
+{car_obj_rows or "<tr><td colspan='11'>---</td></tr>"}
 </table>
 
 </div>
@@ -771,7 +837,8 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 {ai_conclusion}
 """.strip()
 
-    return html.replace("\n", " ").strip()
+    return normalize_br(html.replace("\n", " ").strip())
+
 
 # ---------------- FastAPI App ----------------
 
@@ -821,26 +888,8 @@ async def webhook(payload: WebhookRequest):
     is_ltv_good = (estimated_value * 0.64) > requested_amount
     ltv_status_text = "Ijobiy" if is_ltv_good else "Salbiy"
 
-    # Conclusion Logic
-    # "Agar conclusion = 'POSITIVE' ..."
     conclusion_field = str(body.get("conclusion", "NEUTRAL")).upper()
 
-    # Logic from n8n prompt
-    logic_text = ""
-    if conclusion_field == "POSITIVE":
-        logic_text = (
-            "• Agar conclusion = \"POSITIVE\" bo‘lsa, xulosada faqat ijobiy/kuchli jihatlar va kreditni qo‘llab-quvvatlovchi dalillar yoritilsin; "
-            "salbiy tomonlar, kamchiliklar va risklar tilga olinmasin."
-        )
-    elif conclusion_field == "NEGATIVE":
-        logic_text = (
-            "• Agar conclusion = \"NEGATIVE\" bo‘lsa, xulosada ko'proq salbiy tomonlar/risklar va kreditni rad etishga olib keladigan dalillar yoritilsin; "
-            "ijobiy tomonlar va kuchli jihatlar kamaytirilsin olinmasin."
-        )
-    else: # NEUTRAL
-        logic_text = (
-            "• Agar conclusion = NEUTRAL bo‘lsa, mavjud umumiy logika saqlanib qolsin, standart qoidalar asosida shakllantirilsin."
-        )
 
     # 2. Build Prompt
     # We pass the entire JSON as context
@@ -863,6 +912,7 @@ Xulosa har doim 4 ta tilda bir vaqtning o‘zida yaratiladi:
 Har bir til alohida va mustaqil <div> da bo‘lishi shart.
 Bir til ichida boshqa til aralashmasin.
 
+
 <h3>Yakuniy kredit bo‘yicha ekspert xulosasi</h3>
 
 Xulosa quyidagilar asosida avtomatik shakllantiriladi:
@@ -878,12 +928,13 @@ yuqoridagi natijalar hammasi qisqa londa bo'lsin. Hammasi bitta paragraphda yozi
 Kredit berish xulosasini tuzish bo'yicha logika:
 - Moliyaviy yuk (Aylanma darajasi). Agar so'ralgan kredit summasi kompaniyaning yillik aylanmasidan oshiq bo'lsa, bunday holatni past kredit havfi va kredit bo'yicha qarzni to'lamaslik ehtimoli sifatida baholashingiz kerak.
 - Garov (LTV - Kreditning qiymatga nisbati):
-Agar taqdim etilgan garov kredit miqdoridan sezilarli darajada ortiq bo'lsa, LTV (Kreditning qiymatga nisbati) 64% gacha bo'lgan nisbat ({estimated_value} * 0.64 > {requested_amount} = {is_ltv_good}) ijobiy hisoblanadi.
+Agar taqdim etilgan garov kredit miqdoridan sezilarli darajada ortiq bo'lsa, LTV (Kreditning qiymatga nisbati) 64% gacha bo'lgan nisbat ({str(is_ltv_good).lower()}) ijobiy hisoblanadi.
+
 
 XULOSA QUYIDAGILARDAN BIRI BO‘LISHI SHART, VA ULAR HAM BELGILANGAN TILGA TARJIMA QILINISHI SHART:
 
-1) Agar kredit berish tavsiya etilsa: <strong> Kredit berish tavsiya qilinadi </strong> <- albatta tegishli tilga tarjima qilinishi kerak
-2) Agar kredit berish tavsiya etilmasa: <strong> Kommitet tomonidan ko'rib chiqiladi </strong> <- albatta tegishli tilga tarjima qilinishi kerak
+1) Agar kredit berish tavsiya etilsa: <strong> Kredit berish tavsiya qilinadi </strong> <- albatta {body.get('language', 'tegishli til')}ga tarjima qilinishi kerak
+2) Agar kredit berish tavsiya etilmasa: <strong> Kommitet tomonidan ko'rib chiqiladi </strong> <- albatta {body.get('language', 'tegishli til')}ga tarjima qilinishi kerak
 
 Yuqoridagi ikkita holat, hulosa ham albatta belgilangan tilgan tajrima qilish kerak, va o'sha tilda chiqarish kerak, boshqa tildagi qo'shimchalar bo'lmasin! Hech qachon belgilangan tildan boshqasiga tarjima qilmang!
 
@@ -903,7 +954,9 @@ Qat'iy qoidalar:
 • Chiquvchi text malumotlar ham tartibli kerakli joylar alohida korsatilgan holatda bolishi kerak.
 • "language" fieldida so'ralgan tilda javob generatsiya qilish lozim!
 • Kredit  tavsiya berish yoki bermaslik tavsiyasi <strong> tag ichida bulishi shart
-{logic_text}
+• Agar {conclusion_field} = \"POSITIVE\" bo‘lsa, xulosada faqat ijobiy/kuchli jihatlar va kreditni qo‘llab-quvvatlovchi dalillar yoritilsin; salbiy tomonlar, kamchiliklar va risklar tilga olinmasin.
+• Agar {conclusion_field} = \"NEGATIVE\" bo‘lsa, xulosada ko'proq salbiy tomonlar/risklar va kreditni rad etishga olib keladigan dalillar yoritilsin; ijobiy tomonlar va kuchli jihatlar kamaytirilsin olinmasin.
+• Agar {conclusion_field} = NEUTRAL bo‘lsa, mavjud umumiy logika saqlanib qolsin, standart qoidalar asosida shakllantirilsin.
 """
 
     # 3. Call LLM
