@@ -253,7 +253,7 @@ DICT = {
         "belongs2": "га тегишли.",
         "infra": "Ҳудуд зарур коммунал хизматлар ва коммуникациялар билан жиҳозланган.",
         "built": "Ушбу ҳудудда компания",
-        "built2": "кв.м. майдонга эга янги маъмурий бино қўрди.",
+        "built2": "кв.м. майдонга эга янги маъмурий бино қурди.",
         "collateralTitle": "Гаров ҳақида маълумот",
         "reTitle": "Гаровга қўйилган бино маълумотлари:",
         "carTitle": "Гаровга қўйилган машина маълумотлари:",
@@ -453,6 +453,9 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
         body = payload[0] if payload else {}
     else:
         body = payload.get("body") if isinstance(payload.get("body"), dict) else payload
+    # FIX: handle double-nested body (e.g. body.body)
+    if isinstance(body, dict) and isinstance(body.get("body"), dict):
+        body = body["body"]
         
     language = str(language).lower()
 
@@ -483,13 +486,21 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 
     def purpose_by_lang() -> str:
         a = get_in(body, ["applicationInfo", "applicationData"], {}) or {}
+
+        def pick(*keys) -> str:
+            for k in keys:
+                s = val(a.get(k))
+                if s != "---":
+                    return s
+            return "---"
+
         if language == "cyrl":
-            return val(a.get("purposeCyrl"))
+            return pick("purposeCyrl", "purposeUz", "purposeRu", "purposeEn")
         if language == "ru":
-            return val(a.get("purposeRu"))
+            return pick("purposeRu", "purposeUz", "purposeEn", "purposeCyrl")
         if language == "en":
-            return val(a.get("purposeEn"))
-        return val(a.get("purposeUz"))
+            return pick("purposeEn", "purposeUz", "purposeRu", "purposeCyrl")
+        return pick("purposeUz", "purposeCyrl", "purposeRu", "purposeEn")
 
     purpose = purpose_by_lang()
     requested_amount = num_format(app_data.get("requestedAmount"))
@@ -719,46 +730,89 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
 {L.get("belongs")} {esc(company_name)}{L.get("belongs2")}</br>
 {L.get("infra")}</br>
 {L.get("built")} {esc(main_obj_extra)} {ua} {L.get("built2") if language in ("uz","cyrl") else ""}</p>
+"""
 
-<h3>{L.get("collateralTitle")}</h3>
+    # --- Collateral section: conditionally rendered only when data exists ---
+    collateral_section = ""
+    if collateral_real_estate:
+        collateral_section += f"""
 <p><em><u>{L.get("reTitle")}</u></em></p>
 <table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
 <tr>
 <th>TIN</th>
-<th>{"Company name" if language == "en" else ("Наименование" if language == "ru" else "Kompaniya nomi")}</th>
-<th>{"Type" if language == "en" else ("Тип" if language == "ru" else "Turi")}</th>
-<th>{"Cadastral number" if language == "en" else ("Кадастровый номер" if language == "ru" else "Kadastr raqami")}</th>
-<th>{"Property name" if language == "en" else ("Наименование объекта" if language == "ru" else "Bino nomi")}</th>
-<th>{"Address" if language == "en" else ("Адрес" if language == "ru" else "Manzili")}</th>
-<th>{"Ownership share (%)" if language == "en" else ("Доля владения (%)" if language == "ru" else "Egalik qiluvchi ulushi (%)")}</th>
-<th>{"Inventory value" if language == "en" else ("Инвентарная стоимость" if language == "ru" else "Inventar narx")}</th>
-<th>{"Total area" if language == "en" else ("Общая площадь" if language == "ru" else "Umumiy maydon")}</th>
-<th>{"Building area" if language == "en" else ("Площадь здания" if language == "ru" else "Bino maydoni")}</th>
-<th>{"Additional area" if language == "en" else ("Дополнительная площадь" if language == "ru" else "Qo'shimcha maydon")}</th>
-<th>{"Estimated collateral value" if language == "en" else ("Оценочная стоимость залога" if language == "ru" else "Garovning taxminiy qiymati")}</th>
+<th>{"Company name" if language == "en" else ("Наименование" if language == "ru" else ("Компания номи" if language == "cyrl" else "Kompaniya nomi"))}</th>
+<th>{"Type" if language == "en" else ("Тип" if language == "ru" else ("Тури" if language == "cyrl" else "Turi"))}</th>
+<th>{"Cadastral number" if language == "en" else ("Кадастровый номер" if language == "ru" else ("Кадастр рақами" if language == "cyrl" else "Kadastr raqami"))}</th>
+<th>{"Property name" if language == "en" else ("Наименование объекта" if language == "ru" else ("Бино номи" if language == "cyrl" else "Bino nomi"))}</th>
+<th>{"Address" if language == "en" else ("Адрес" if language == "ru" else ("Манзили" if language == "cyrl" else "Manzili"))}</th>
+<th>{"Ownership share (%)" if language == "en" else ("Доля владения (%)" if language == "ru" else ("Эгалик қилувчи улуши (%)" if language == "cyrl" else "Egalik qiluvchi ulushi (%)"))}</th>
+<th>{"Inventory value" if language == "en" else ("Инвентарная стоимость" if language == "ru" else ("Инвентар нарх" if language == "cyrl" else "Inventar narx"))}</th>
+<th>{"Total area" if language == "en" else ("Общая площадь" if language == "ru" else ("Умумий майдон" if language == "cyrl" else "Umumiy maydon"))}</th>
+<th>{"Building area" if language == "en" else ("Площадь здания" if language == "ru" else ("Бино майдони" if language == "cyrl" else "Bino maydoni"))}</th>
+<th>{"Additional area" if language == "en" else ("Доп. площадь" if language == "ru" else ("Қўшимча майдон" if language == "cyrl" else "Qo'shimcha maydon"))}</th>
+<th>{"Estimated collateral value" if language == "en" else ("Оценочная стоимость залога" if language == "ru" else ("Гаровнинг тахминий қиймати" if language == "cyrl" else "Garovning taxminiy qiymati"))}</th>
 </tr>
-{collateral_real_estate or "<tr><td colspan='12'>---</td></tr>"}
-</table>
+{collateral_real_estate}
+</table><br>"""
 
-</br>
+    if collateral_cars:
+        collateral_section += f"""
 <p><em><u>{L.get("carTitle")}</u></em></p>
 <table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
 <tr>
-<th>{"Model" if language == "en" else ("Модель" if language == "ru" else "Modeli")}</th>
-<th>{"Color" if language == "en" else ("Цвет" if language == "ru" else "Rangi")}</th>
-<th>{"Year" if language == "en" else ("Год" if language == "ru" else "Yil")}</th>
-<th>{"Body number" if language == "en" else ("Номер кузова" if language == "ru" else "Kuzov raqami")}</th>
-<th>{"Engine" if language == "en" else ("Двигатель" if language == "ru" else "Motor")}</th>
+<th>{"Model" if language == "en" else ("Модель" if language == "ru" else ("Модели" if language == "cyrl" else "Modeli"))}</th>
+<th>{"Color" if language == "en" else ("Цвет" if language == "ru" else ("Ранги" if language == "cyrl" else "Rangi"))}</th>
+<th>{"Year" if language == "en" else ("Год" if language == "ru" else ("Йил" if language == "cyrl" else "Yil"))}</th>
+<th>{"Body number" if language == "en" else ("Номер кузова" if language == "ru" else ("Кузов рақами" if language == "cyrl" else "Kuzov raqami"))}</th>
+<th>{"Engine" if language == "en" else ("Двигатель" if language == "ru" else ("Мотор" if language == "cyrl" else "Motor"))}</th>
 <th>{"Chassis" if language == "en" else ("Шасси" if language == "ru" else "Shassi")}</th>
-<th>{"License plate" if language == "en" else ("Гос. номер" if language == "ru" else "Davlat raqami")}</th>
-<th>{"Registration date" if language == "en" else ("Дата регистрации" if language == "ru" else "Ro'yxatdan o'tgan sana")}</th>
-<th>{"Division" if language == "en" else ("Подразделение" if language == "ru" else "Diviziya")}</th>
-<th>{"Owner" if language == "en" else ("Владелец" if language == "ru" else "Egalik qiluvchi")}</th>
-<th>{"Address" if language == "en" else ("Адрес" if language == "ru" else "Manzili")}</th>
-<th>{"Estimated collateral value" if language == "en" else ("Оценочная стоимость залога" if language == "ru" else "Garovning taxminiy qiymati")}</th>
+<th>{"License plate" if language == "en" else ("Гос. номер" if language == "ru" else ("Давлат рақами" if language == "cyrl" else "Davlat raqami"))}</th>
+<th>{"Registration date" if language == "en" else ("Дата регистрации" if language == "ru" else ("Рўйхатдан ўтган сана" if language == "cyrl" else "Ro'yxatdan o'tgan sana"))}</th>
+<th>{"Division" if language == "en" else ("Подразделение" if language == "ru" else ("Дивизия" if language == "cyrl" else "Diviziya"))}</th>
+<th>{"Owner" if language == "en" else ("Владелец" if language == "ru" else ("Эгалик қилувчи" if language == "cyrl" else "Egalik qiluvchi"))}</th>
+<th>{"Address" if language == "en" else ("Адрес" if language == "ru" else ("Манзили" if language == "cyrl" else "Manzili"))}</th>
+<th>{"Estimated collateral value" if language == "en" else ("Оценочная стоимость залога" if language == "ru" else ("Гаровнинг тахминий қиймати" if language == "cyrl" else "Garovning taxminiy qiymati"))}</th>
 </tr>
-{collateral_cars or "<tr><td colspan='12'>---</td></tr>"}
-</table>
+{collateral_cars}
+</table><br>"""
+
+    if collateral_section:
+        collateral_section = f"""<h3>{L.get("collateralTitle")}</h3>""" + collateral_section
+
+    # --- Assets section: conditionally rendered only when data exists ---
+    assets_section = ""
+    if tax_obj_rows:
+        assets_section += f"""
+<p><em><u>{L.get("objs")}</u></em></p>
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
+<tr>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th>
+</tr>
+{tax_obj_rows}
+</table><br>"""
+
+    if car_obj_rows:
+        assets_section += f"""
+<p><em><u>{L.get("cars")}</u></em></p>
+<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
+<tr>
+<th style="border: 1px solid black; padding: 4px;">{L.get("hModel")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hColor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hYear")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hKuzov")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hMotor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShassi")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hGosNumber")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hRegDate")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hDivision")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hOwner")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
+</tr>
+{car_obj_rows}
+</table><br>"""
+
+    html = html + f"""
+{collateral_section}
 
 <p><i><u>{L.get("balanceTitle")}</u></i></p>
 <table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; width: 100%;">
@@ -786,7 +840,7 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
   ) if language == "ru" else (
    f"{esc(company_name)} has been operating since {esc(foundation_year)} and primarily provides services in the field of {esc(oked)}.</br>"
    f"Legal address: {esc(legal_address)}.</br>"
-   f"The company’s balance includes {esc(buildings)} building(s) and {esc(land_area)} {ua} of land; the territory is supplied with the necessary infrastructure and communications.</br>"
+   f"The company's balance includes {esc(buildings)} building(s) and {esc(land_area)} {ua} of land; the territory is supplied with the necessary infrastructure and communications.</br>"
    f"Average number of employees: {esc(employee_count)}.</br>"
    f"Financial performance, market reputation, and asset liquidity provide a strong basis for confidence in the company."
   ) if language == "en" else (
@@ -796,42 +850,16 @@ def build_html_for_lang(payload: Any, ai_conclusion: str, language: str) -> str:
    f"Ташкилотда {esc(employee_count)} нафар ходим ишлайди ва ишлаб чиқариш қуввати йил сайин ошмоқда.</br>"
    f"Молиявий кўрсаткичлар ва бозордаги обрў-эътибори, шунингдек, активларнинг ликвидлиги корхонага юқори ишонч беради."
   ) if language == "cyrl" else (
-   f"{esc(company_name)} korxonasi {esc(foundation_year)} yildan beri faoliyat yuritib, asosan {esc(oked)} sohasida xizmat ko‘rsatib keladi.</br>"
+   f"{esc(company_name)} korxonasi {esc(foundation_year)} yildan beri faoliyat yuritib, asosan {esc(oked)} sohasida xizmat ko'rsatib keladi.</br>"
    f"Korxona yuridik manzili: {esc(legal_address)}.</br>"
-   f"Korxona balansida {esc(buildings)} dona bino va {esc(land_area)} {ua} yer maydoni mavjud bo‘lib, hudud zarur infratuzilma va kommunikatsiyalar bilan ta’minlangan.</br>"
+   f"Korxona balansida {esc(buildings)} dona bino va {esc(land_area)} {ua} yer maydoni mavjud bo'lib, hudud zarur infratuzilma va kommunikatsiyalar bilan ta'minlangan.</br>"
    f"Tashkilotda {esc(employee_count)} nafar xodim ishlaydi va ishlab chiqarish quvvati yil sayin oshmoqda.</br>"
-   f"Moliyaviy ko‘rsatkichlar va bozordagi obro‘-e’tibori, shuningdek, aktivlarning likvidligi korxonaga yuqori ishonch beradi."
+   f"Moliyaviy ko'rsatkichlar va bozordagi obro'-e'tibori, shuningdek, aktivlarning likvidligi korxonaga yuqori ishonch beradi."
   )
 }
 </p>
 
-<p><em><u>{L.get("objs")}</u></em></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
-<tr>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hTin")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hName")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hType")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hCad")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hObjName")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hShare")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hInvCost")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hTotalArea")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hBuildArea")}</th>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hExtraArea")}</th>
-</tr>
-{tax_obj_rows or "<tr><td colspan='11'>---</td></tr>"}
-</table>
-
-</br>
-<p><em><u>{L.get("cars")}</u></em></p>
-<table border="1" cellspacing="0" cellpadding="4" width="100%" style="font-family:'Times New Roman'; font-size:11pt; border-collapse: collapse;">
-<tr>
-<th style="border: 1px solid black; padding: 4px;">{L.get("hModel")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hColor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hYear")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hKuzov")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hMotor")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hShassi")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hGosNumber")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hRegDate")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hDivision")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hOwner")}</th><th style="border: 1px solid black; padding: 4px;">{L.get("hAddr")}</th>
-</tr>
-{car_obj_rows or "<tr><td colspan='11'>---</td></tr>"}
-</table>
-
+{assets_section}
 </div>
 <br><h2>{esc(L.get("expertConclusionTitle"))}</h2><br>
 {ai_conclusion}
